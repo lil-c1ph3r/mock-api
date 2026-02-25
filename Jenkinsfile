@@ -55,13 +55,13 @@ pipeline {
                 )]) {
                     sh '''
                         echo "Logging into Nexus..."
-                        echo $NEXUS_PASS | docker login localhost:5000 -u $NEXUS_USER --password-stdin
+                        echo $NEXUS_PASS | docker login nexus:5000 -u $NEXUS_USER --password-stdin
 
                         echo "Tagging image..."
-                        docker tag sample-api:latest localhost:5000/sample-api:latest
+                        docker tag sample-api:latest nexus:5000/sample-api:latest
 
                         echo "Pushing image to Nexus..."
-                        docker push localhost:5000/sample-api:latest
+                        docker push nexus:5000/sample-api:latest
                     '''
                 }
             }
