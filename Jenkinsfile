@@ -147,6 +147,7 @@ pipeline {
             archiveArtifacts artifacts: '*.json', fingerprint: true
         }
     }
+}
     def sendTelegramFile(filePath, captionMessage) {
         withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN')]) {
         sh """
@@ -157,4 +158,3 @@ pipeline {
         """
         }
     }
-}
