@@ -74,7 +74,12 @@ pipeline {
                     ${TRUFFLEHOG} filesystem . --json --no-update > ${TRUFFLEHOG_REPORT}
 
                     echo "Running Gitleaks scan..."
-                    ${GITLEAKS} detect --source . --report-format json --report-path ${GITLEAKS_REPORT}
+                    gitleaks detect \
+                    --source . \
+                    --since-commit HEAD~1 \
+                    --report-format json \
+                    --report-path gitleaks-report.json \
+                    --exit-code 1
                 '''
             }
         }
