@@ -140,6 +140,20 @@ pipeline {
                         "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}"
                     )
                 }
+
+                if (fileExists("trivy-report.json")) {
+                    sendTelegramFile(
+                        "trivy-report.json",
+                        "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}"
+                    )
+                }
+                if (fileExists("trufflehog-report.json")) {
+                    sendTelegramFile(
+                        "trufflehog-report.json",
+                        "❌ FAILED - TruffleHog Report\nBuild #${BUILD_NUMBER}"
+                    )
+                }
+                
             }
             echo "Pipeline failed ❌"
         }
