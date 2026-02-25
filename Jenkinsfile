@@ -48,16 +48,25 @@ pipeline {
                 sh 'docker build -t sample-api:latest .'
             }
         }
-        stage('Push to Registry') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'docker-registry-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                    echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin registry:5000
-                    docker tag sample-api:latest registry:5000/sample-api:latest
-                    docker push registry:5000/sample-api:latest
-                    '''
-                }
-            }
+        stage('Push to Nexus') {
+    steps {
+        withCredentials([usernamePassword(
+            credentialsId: 'nexus-creds',
+            usernameVariable: 'NEXUS_USER',
+            passwordVariable: 'NEXUS_PASS'
+        )]) {
+            sh '''
+                echo "Logging into Nexus..."
+                echo $NEXUS_PASS | docker login localhost:5000 -u $NEXUS_USER --password-stdin
+
+                echo "Tagging image..."
+                docker tag sample-api:latest localhost:5000/sample-api:latest
+
+                echo "Pushing image to Nexus..."
+                docker push localhost:5000/sample-api:latest
+            '''
         }
+    }
+}
     }
 }
