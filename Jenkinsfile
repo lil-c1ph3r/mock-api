@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        REGISTRY = "localhost:5000"
+        IMAGE_NAME = "sample-api"
+    }
+
     stages {
 
         stage('Pull Code') {
@@ -11,24 +16,41 @@ pipeline {
             }
         }
 
+        stage('Set Image Version') {
+            steps {
+                script {
+                    // Get version from package.json
+                    VERSION = sh(
+                        script: "node -p \"require('./package.json').version\"",
+                        returnStdout: true
+                    ).trim()
+
+                    IMAGE_TAG = "${VERSION}-${env.BUILD_NUMBER}"
+
+                    echo "Building image version: ${IMAGE_TAG}"
+                }
+            }
+        }
+
         stage('Fetch Secrets from Vault') {
             steps {
                 withVault([
                     vaultSecrets: [[
                         path: 'secret/sample-api',
+                        engineVersion: 2,
                         secretValues: [
                             [envVar: 'DB_USER', vaultKey: 'DB_USER'],
                             [envVar: 'DB_PASS', vaultKey: 'DB_PASS'],
                             [envVar: 'API_KEY', vaultKey: 'API_KEY']
                         ]
-                    ]]
+                    ]],
+                    vaultCredentialId: 'vault-token'
                 ]) {
                     sh '''
                         echo "Creating .env file from Vault"
                         echo "DB_USER=$DB_USER" > .env
                         echo "DB_PASS=$DB_PASS" >> .env
                         echo "API_KEY=$API_KEY" >> .env
-                        cat .env
                     '''
                 }
             }
@@ -42,7 +64,9 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t sample-api:latest .'
+                sh """
+                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                """
             }
         }
 
@@ -53,11 +77,11 @@ pipeline {
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASS'
                 )]) {
-                    sh '''
-                        echo "$NEXUS_PASS" | docker login localhost:5000 -u "$NEXUS_USER" --password-stdin
-                        docker tag sample-api:latest localhost:5000/sample-api:latest
-                        docker push localhost:5000/sample-api:latest
-                    '''
+                    sh """
+                        echo "$NEXUS_PASS" | docker login ${REGISTRY} -u "$NEXUS_USER" --password-stdin
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                        docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                    """
                 }
             }
         }
@@ -66,6 +90,7 @@ pipeline {
     post {
         success {
             echo "Pipeline completed successfully ✅"
+            echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
         }
         failure {
             echo "Pipeline failed ❌"
