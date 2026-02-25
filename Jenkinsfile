@@ -66,7 +66,9 @@ pipeline {
                     echo "Running Trivy scan..."
                     trivy fs . \
                     --severity HIGH,CRITICAL \
-                    --exit-code 1
+                    --exit-code 1 \
+                    --skip-files gitleaks-report.json \
+                    --skip-files trufflehog-report.json
 
                     echo "Running TruffleHog scan..."
                     ${TRUFFLEHOG} filesystem . --json --no-update > ${TRUFFLEHOG_REPORT}
