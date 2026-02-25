@@ -60,24 +60,20 @@ pipeline {
             }
         }
 
-        stage('Trivy Scan') {
+        stage('Trivy & TruffleHog & Gitleaks') {
             steps {
                 sh '''
+                    echo "Running Trivy scan..."
                     trivy fs . \
                     --severity HIGH,CRITICAL \
                     --exit-code 1
-                '''
-            }
-        }
-        stage('Secret Scan (TruffleHog & Gitleaks)') {
-            steps {
-                sh """
-            echo "Running TruffleHog scan..."
-            ${TRUFFLEHOG} filesystem . --json --no-update > ${TRUFFLEHOG_REPORT}
 
-            echo "Running Gitleaks scan..."
-            ${GITLEAKS} detect --source . --report-format json --report-path ${GITLEAKS_REPORT}
-        """
+                    echo "Running TruffleHog scan..."
+                    ${TRUFFLEHOG} filesystem . --json --no-update > ${TRUFFLEHOG_REPORT}
+
+                    echo "Running Gitleaks scan..."
+                    ${GITLEAKS} detect --source . --report-format json --report-path ${GITLEAKS_REPORT}
+                '''
             }
         }
 
