@@ -2,12 +2,11 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = "localhost:5000"
-        IMAGE_NAME = "sample-api"
+        REGISTRY = 'localhost:5000'
+        IMAGE_NAME = 'sample-api'
     }
 
     stages {
-
         stage('Pull Code') {
             steps {
                 git url: 'https://github.com/lil-c1ph3r/mock-api.git',
@@ -19,11 +18,10 @@ pipeline {
         stage('Set Image Version') {
             steps {
                 script {
-                    // Get version from package.json
                     VERSION = sh(
-                        script: "node -p \"require('./package.json').version\"",
-                        returnStdout: true
-                    ).trim()
+                script: "grep '\"version\"' package.json | head -1 | cut -d '\"' -f4",
+                returnStdout: true
+            ).trim()
 
                     IMAGE_TAG = "${VERSION}-${env.BUILD_NUMBER}"
 
@@ -44,6 +42,7 @@ pipeline {
                             [envVar: 'API_KEY', vaultKey: 'API_KEY']
                         ]
                     ]],
+                    vaultCredentialId: 'vault-token'
                 ]) {
                     sh '''
                         echo "Creating .env file from Vault"
@@ -88,11 +87,11 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline completed successfully ✅"
+            echo 'Pipeline completed successfully ✅'
             echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
         }
         failure {
-            echo "Pipeline failed ❌"
+            echo 'Pipeline failed ❌'
         }
     }
 }
