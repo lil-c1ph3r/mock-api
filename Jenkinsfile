@@ -123,6 +123,10 @@ pipeline {
                     "trivy-report.json",
                     "✅ SUCCESS - Trivy Report\nBuild #${BUILD_NUMBER}"
                 )
+                sendTelegramFile(
+                    "trufflehog-report.json",
+                    "✅ SUCCESS - TruffleHog Report\nBuild #${BUILD_NUMBER}"
+                )
             }
         }
         failure {
@@ -131,13 +135,6 @@ pipeline {
                     sendTelegramFile(
                         "gitleaks-report.json",
                         "❌ FAILED - Gitleaks Report\nBuild #${BUILD_NUMBER}"
-                    )
-                }
-
-                if (fileExists("trivy-report.json")) {
-                    sendTelegramFile(
-                        "trivy-report.json",
-                        "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}"
                     )
                 }
 
