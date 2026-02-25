@@ -5,9 +5,9 @@ pipeline {
 
         stage('Pull Code') {
             steps {
-                git url: 'http://gitlab:80/root/sample-api.git',
+                git url: 'https://github.com/lil-c1ph3r/mock-api.git',
                     branch: 'main',
-                    credentialsId: 'gitlab-creds'
+                    credentialsId: 'github-creds'
             }
         }
 
