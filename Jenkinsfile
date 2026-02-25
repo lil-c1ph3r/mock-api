@@ -68,6 +68,7 @@ pipeline {
                     --severity HIGH,CRITICAL \
                     --exit-code 1 \
                     --skip-files gitleaks-report.json \
+                    --output trivy-report.json \
                     --skip-files trufflehog-report.json
 
                     echo "Running TruffleHog scan..."
@@ -113,12 +114,47 @@ pipeline {
         success {
             echo 'Pipeline completed successfully ✅'
             echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
+            script {
+                sendTelegramFile(
+                    "gitleaks-report.json",
+                    "✅ SUCCESS - Gitleaks Report\nBuild #${BUILD_NUMBER}"
+                )
+                sendTelegramFile(
+                    "trivy-report.json",
+                    "✅ SUCCESS - Trivy Report\nBuild #${BUILD_NUMBER}"
+                )
+            }
         }
         failure {
-            echo 'Pipeline failed ❌'
+            script {
+                if (fileExists("gitleaks-report.json")) {
+                    sendTelegramFile(
+                        "gitleaks-report.json",
+                        "❌ FAILED - Gitleaks Report\nBuild #${BUILD_NUMBER}"
+                    )
+                }
+
+                if (fileExists("trivy-report.json")) {
+                    sendTelegramFile(
+                        "trivy-report.json",
+                        "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}"
+                    )
+                }
+            }
+            echo "Pipeline failed ❌"
         }
         always {
             archiveArtifacts artifacts: '*.json', fingerprint: true
+        }
+    }
+    def sendTelegramFile(filePath, captionMessage) {
+        withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN')]) {
+        sh """
+        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument \
+          -F chat_id=827881296 \
+          -F document=@${filePath} \
+          -F caption="${captionMessage}"
+        """
         }
     }
 }
