@@ -76,7 +76,7 @@ pipeline {
                     echo "Running Gitleaks scan..."
                     gitleaks detect \
                     --source . \
-                    --since-commit HEAD~1 \
+                    --log-opts="HEAD~1..HEAD" \
                     --report-format json \
                     --report-path gitleaks-report.json \
                     --exit-code 1
