@@ -65,6 +65,17 @@ pipeline {
                 sh 'trivy fs .'
             }
         }
+        stage('Secret Scan (TruffleHog & Gitleaks)') {
+            steps {
+                sh """
+            echo "Running TruffleHog scan..."
+            ${TRUFFLEHOG} filesystem . --json > ${TRUFFLEHOG_REPORT} || true
+
+            echo "Running Gitleaks scan..."
+            ${GITLEAKS} detect --source . --report-format json --report-path ${GITLEAKS_REPORT} || true
+        """
+            }
+        }
 
         stage('Build Docker Image') {
             steps {
@@ -89,17 +100,7 @@ pipeline {
                 }
             }
         }
-        stage('Secret Scan (TruffleHog & Gitleaks)') {
-            steps {
-                sh """
-            echo "Running TruffleHog scan..."
-            ${TRUFFLEHOG} filesystem . --json > ${TRUFFLEHOG_REPORT} || true
-
-            echo "Running Gitleaks scan..."
-            ${GITLEAKS} detect --source . --report-format json --report-path ${GITLEAKS_REPORT} || true
-        """
-            }
-        }
+        
     }
 
     post {
