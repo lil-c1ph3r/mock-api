@@ -69,7 +69,7 @@ pipeline {
             steps {
                 sh """
             echo "Running TruffleHog scan..."
-            ${TRUFFLEHOG} filesystem . --json > ${TRUFFLEHOG_REPORT} || true
+            ${TRUFFLEHOG} filesystem . --json --no-update > ${TRUFFLEHOG_REPORT} || true
 
             echo "Running Gitleaks scan..."
             ${GITLEAKS} detect --source . --report-format json --report-path ${GITLEAKS_REPORT} || true
