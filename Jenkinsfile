@@ -4,6 +4,13 @@ pipeline {
     environment {
         REGISTRY = 'localhost:5000'
         IMAGE_NAME = 'sample-api'
+
+        CLI_BIN_PATH = '/usr/local/bin'
+        TRUFFLEHOG = "${CLI_BIN_PATH}/trufflehog"
+        GITLEAKS = "${CLI_BIN_PATH}/gitleaks"
+
+        TRUFFLEHOG_REPORT = 'trufflehog-report.json'
+        GITLEAKS_REPORT = 'gitleaks-report.json'
     }
 
     stages {
@@ -82,6 +89,17 @@ pipeline {
                 }
             }
         }
+        stage('Secret Scan (TruffleHog & Gitleaks)') {
+            steps {
+                sh """
+            echo "Running TruffleHog scan..."
+            ${TRUFFLEHOG} filesystem . --json > ${TRUFFLEHOG_REPORT} || true
+
+            echo "Running Gitleaks scan..."
+            ${GITLEAKS} detect --source . --report-format json --report-path ${GITLEAKS_REPORT} || true
+        """
+            }
+        }
     }
 
     post {
@@ -91,6 +109,9 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed ❌'
+        }
+        always {
+            archiveArtifacts artifacts: '*.json', fingerprint: true
         }
     }
 }
