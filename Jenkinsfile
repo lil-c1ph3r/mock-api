@@ -42,7 +42,6 @@ pipeline {
                             [envVar: 'API_KEY', vaultKey: 'API_KEY']
                         ]
                     ]],
-                    vaultCredentialId: 'vault-token'
                 ]) {
                     sh '''
                         echo "Creating .env file from Vault"
