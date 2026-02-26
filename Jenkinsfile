@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = 'localhost:5000'
+        REGISTRY = '54.169.32.192:5000'
         IMAGE_NAME = 'sample-api'
 
         CLI_BIN_PATH = '/usr/local/bin'
@@ -18,7 +18,7 @@ pipeline {
             steps {
                 git url: 'https://github.com/lil-c1ph3r/mock-api.git',
                     branch: 'main',
-                    credentialsId: 'github-creds'
+                    credentialsId: 'github-token'
             }
         }
 
