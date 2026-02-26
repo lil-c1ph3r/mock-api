@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = '54.169.32.192:5000'
+        REGISTRY = 'localhost:5000'
         IMAGE_NAME = 'sample-api'
 
         CLI_BIN_PATH = '/usr/local/bin'
