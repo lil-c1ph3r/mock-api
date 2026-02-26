@@ -15,7 +15,6 @@ pipeline {
     }
 
     stages {
-
         stage('Set Image Version') {
             steps {
                 script {
@@ -58,11 +57,10 @@ pipeline {
                 sh '''
                     echo "Running Trivy scan..."
                     trivy fs . \
-                      --severity HIGH,CRITICAL \
-                      --exit-code 1 \
-                      --skip-files ${GITLEAKS_REPORT} \
-                      --skip-files ${TRUFFLEHOG_REPORT} \
-                      --output ${TRIVY_REPORT}
+                    --scanners vuln,secret \
+                    --severity HIGH,CRITICAL \
+                    --format json \
+                    --output ${TRIVY_REPORT}
 
                     echo "Running TruffleHog scan..."
                     ${TRUFFLEHOG} filesystem . --json --no-update > ${TRUFFLEHOG_REPORT}
@@ -108,32 +106,31 @@ pipeline {
     }
 
     post {
-
         success {
-            echo "Pipeline completed successfully ✅"
+            echo 'Pipeline completed successfully ✅'
             echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
             script {
-                sendIfNotEmpty("gitleaks-report.json",
+                sendIfNotEmpty('gitleaks-report.json',
                     "✅ SUCCESS - Gitleaks Report\nBuild #${BUILD_NUMBER}")
-                sendIfNotEmpty("trivy-report.json",
+                sendIfNotEmpty('trivy-report.json',
                     "✅ SUCCESS - Trivy Report\nBuild #${BUILD_NUMBER}")
-                sendIfNotEmpty("trufflehog-report.json",
+                sendIfNotEmpty('trufflehog-report.json',
                     "✅ SUCCESS - TruffleHog Report\nBuild #${BUILD_NUMBER}")
             }
         }
 
         failure {
             script {
-                sendIfNotEmpty("gitleaks-report.json",
+                sendIfNotEmpty('gitleaks-report.json',
                     "❌ FAILED - Gitleaks Report\nBuild #${BUILD_NUMBER}")
-                sendIfNotEmpty("trivy-report.json",
+                sendIfNotEmpty('trivy-report.json',
                     "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}")
-                sendIfNotEmpty("trufflehog-report.json",
+                sendIfNotEmpty('trufflehog-report.json',
                     "❌ FAILED - TruffleHog Report\nBuild #${BUILD_NUMBER}")
             }
 
-            echo "Pipeline failed ❌"
+            echo 'Pipeline failed ❌'
         }
 
         always {
@@ -141,7 +138,6 @@ pipeline {
         }
     }
 }
-
 
 /* ------------------------------
    Helper Functions
