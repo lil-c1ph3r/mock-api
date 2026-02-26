@@ -15,10 +15,3 @@ app.get('/hello', (req, res) => {
 app.listen(port, () => {
   console.log(`Mock API listening at http://localhost:${port}`);
 });
-
-//testing endpoint
-
-//testign version 2
-//testing version 3
-
-//sjhdjdsfddd
