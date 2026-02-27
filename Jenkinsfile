@@ -56,19 +56,30 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    sh '''
-                        echo "Running Trivy scan..."
-                        trivy fs . \
-                        --severity HIGH,CRITICAL \
-                        --exit-code 1 \
-                        --skip-files gitleaks-report.json \
-                        --output trivy-report.json \
-                        --skip-files trivy-report.json
-                    '''
-                }
+                sh '''
+                    echo "Running Trivy scan..."
+                    trivy fs . \
+                    --severity HIGH,CRITICAL \
+                    --exit-code 0 \
+                    --skip-files gitleaks-report.json \
+                    --output trivy-report.json \
+                    --skip-files trivy-report.json
+                '''
                 script {
-                    if (currentBuild.currentResult == 'FAILURE' || currentBuild.currentResult == 'UNSTABLE') {
+                    def trivyReport = readJSON file: 'trivy-report.json'
+                    def vulnCount = 0
+                    def secretCount = 0
+                    if (trivyReport.Results) {
+                        for (result in trivyReport.Results) {
+                            if (result.Vulnerabilities) {
+                                vulnCount += result.Vulnerabilities.size()
+                            }
+                            if (result.Secrets) {
+                                secretCount += result.Secrets.size()
+                            }
+                        }
+                    }
+                    if (vulnCount > 0 || secretCount > 0) {
                         env.SCAN_FAILED = 'true'
                     }
                 }
@@ -77,14 +88,13 @@ pipeline {
 
         stage('TruffleHog Scan') {
             steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    sh '''
-                        echo "Running TruffleHog scan..."
-                        trufflehog filesystem . --json --no-update > trufflehog-report.json
-                    '''
-                }
+                sh '''
+                    echo "Running TruffleHog scan..."
+                    trufflehog filesystem . --json --no-update > trufflehog-report.json
+                '''
                 script {
-                    if (currentBuild.currentResult == 'FAILURE' || currentBuild.currentResult == 'UNSTABLE') {
+                    def trufflehogReport = readJSON file: 'trufflehog-report.json'
+                    if (trufflehogReport instanceof List && trufflehogReport.size() > 0) {
                         env.SCAN_FAILED = 'true'
                     }
                 }
@@ -93,19 +103,18 @@ pipeline {
 
         stage('Gitleaks Scan') {
             steps {
-                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
-                    sh '''
-                        echo "Running Gitleaks scan..."
-                        gitleaks detect \
-                        --source . \
-                        --log-opts="HEAD~1..HEAD" \
-                        --report-format json \
-                        --report-path gitleaks-report.json \
-                        --exit-code 1
-                    '''
-                }
+                sh '''
+                    echo "Running Gitleaks scan..."
+                    gitleaks detect \
+                    --source . \
+                    --log-opts="HEAD~1..HEAD" \
+                    --report-format json \
+                    --report-path gitleaks-report.json \
+                    --exit-code 0
+                '''
                 script {
-                    if (currentBuild.currentResult == 'FAILURE' || currentBuild.currentResult == 'UNSTABLE') {
+                    def gitleaksReport = readJSON file: 'gitleaks-report.json'
+                    if (gitleaksReport instanceof List && gitleaksReport.size() > 0) {
                         env.SCAN_FAILED = 'true'
                     }
                 }
