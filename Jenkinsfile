@@ -56,11 +56,10 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 sh '''
-                    mkdir -p folder-reports
                     echo "Running Trivy scan..."
                     trivy fs . \
                     --severity HIGH,CRITICAL \
-                    --output folder-reports/trivy-report.json \
+                    --output trivy-report.json \
                     --skip-files gitleaks-report.json \
                     --skip-files trufflehog-report.json
                 '''
@@ -75,9 +74,9 @@ pipeline {
                     --source . \
                     --log-opts="HEAD~1..HEAD" \
                     --report-format json \
-                    --report-path folder-reports/gitleaks-report.json \
-                    --exclude-path folder-reports/trivy-report.json \
-                    --exclude-path folder-reports/trufflehog-report.json
+                    --report-path gitleaks-report.json \
+                    --exclude-path trivy-report.json \
+                    --exclude-path trufflehog-report.json
                     
                 '''
             }
@@ -87,7 +86,7 @@ pipeline {
             steps {
                 sh '''
                     echo "Running TruffleHog scan..."
-                    trufflehog filesystem . --exclude-paths folder-reports/trivy-report.json folder-reports/gitleaks-report.json --json --no-update > folder-reports/trufflehog-report.json
+                    trufflehog filesystem . --exclude-paths trivy-report.json gitleaks-report.json --json --no-update > trufflehog-report.json
                 '''
             }
         }
@@ -122,15 +121,15 @@ pipeline {
             echo 'Sending scan reports to Telegram...'
             script {
                 sendTelegramFile(
-                    "folder-reports/gitleaks-report.json",
+                    "gitleaks-report.json",
                     "Gitleaks Report\nBuild #${BUILD_NUMBER}"
                 )
                 sendTelegramFile(
-                    "folder-reports/trivy-report.json",
+                    "trivy-report.json",
                     "Trivy Report\nBuild #${BUILD_NUMBER}"
                 )
                 sendTelegramFile(
-                    "folder-reports/trufflehog-report.json",
+                    "trufflehog-report.json",
                     "TruffleHog Report\nBuild #${BUILD_NUMBER}"
                 )
             }
