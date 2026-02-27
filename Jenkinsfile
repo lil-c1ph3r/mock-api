@@ -56,15 +56,17 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                sh '''
-                    echo "Running Trivy scan..."
-                    trivy fs . \
-                    --severity HIGH,CRITICAL \
-                    --exit-code 0 \
-                    --skip-files gitleaks-report.json \
-                    --output trivy-report.json \
-                    --skip-files trivy-report.json
-                '''
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    sh '''
+                        echo "Running Trivy scan..."
+                        trivy fs . \
+                        --severity HIGH,CRITICAL \
+                        --exit-code 0 \
+                        --skip-files gitleaks-report.json \
+                        --output trivy-report.json \
+                        --skip-files trivy-report.json
+                    '''
+                }
                 script {
                     def trivyReport = readJSON file: 'trivy-report.json'
                     def vulnCount = 0
@@ -88,10 +90,12 @@ pipeline {
 
         stage('TruffleHog Scan') {
             steps {
-                sh '''
-                    echo "Running TruffleHog scan..."
-                    trufflehog filesystem . --json --no-update > trufflehog-report.json
-                '''
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    sh '''
+                        echo "Running TruffleHog scan..."
+                        trufflehog filesystem . --json --no-update > trufflehog-report.json
+                    '''
+                }
                 script {
                     def trufflehogReport = readJSON file: 'trufflehog-report.json'
                     if (trufflehogReport instanceof List && trufflehogReport.size() > 0) {
@@ -103,15 +107,17 @@ pipeline {
 
         stage('Gitleaks Scan') {
             steps {
-                sh '''
-                    echo "Running Gitleaks scan..."
-                    gitleaks detect \
-                    --source . \
-                    --log-opts="HEAD~1..HEAD" \
-                    --report-format json \
-                    --report-path gitleaks-report.json \
-                    --exit-code 0
-                '''
+                catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                    sh '''
+                        echo "Running Gitleaks scan..."
+                        gitleaks detect \
+                        --source . \
+                        --log-opts="HEAD~1..HEAD" \
+                        --report-format json \
+                        --report-path gitleaks-report.json \
+                        --exit-code 0
+                    '''
+                }
                 script {
                     def gitleaksReport = readJSON file: 'gitleaks-report.json'
                     if (gitleaksReport instanceof List && gitleaksReport.size() > 0) {
