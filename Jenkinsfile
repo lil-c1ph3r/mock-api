@@ -85,11 +85,13 @@ pipeline {
                     trufflehog git . \
                     --results=verified,unverified,unknown \
                     --fail \
+                    --no-update \
                     --json > /tmp/trufflehog-report.json
 
                     trufflehog filesystem . \
                     --results=verified,unverified,unknown \
                     --fail \
+                    --no-update \
                     --json >> /tmp/trufflehog-report.json
                 '''
             }
