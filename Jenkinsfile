@@ -1,13 +1,10 @@
-import groovy.json.JsonSlurperClassic
-
-pipeline {
+﻿pipeline {
     agent any
 
     environment {
         REGISTRY = 'localhost:5000'
         IMAGE_NAME = 'mock-api'
         IMAGE_TAG = ''
-        SCAN_FAILED = 'false'
     }
 
     stages {
@@ -22,12 +19,17 @@ pipeline {
         stage('Set Image Version') {
             steps {
                 script {
-                    def version = sh(
+                    env.VERSION = sh(
                         script: "grep '\"version\"' package.json | head -1 | cut -d '\"' -f4",
                         returnStdout: true
                     ).trim()
 
-                    env.IMAGE_TAG = "${version}-${env.BUILD_NUMBER}"
+                    if (!env.VERSION) {
+                        error("Version not found in package.json")
+                    }
+
+                    env.IMAGE_TAG = "${env.VERSION}-${env.BUILD_NUMBER}"
+
                     echo "Building image version: ${env.IMAGE_TAG}"
                 }
             }
@@ -56,126 +58,37 @@ pipeline {
             }
         }
 
-        stage('Trivy Scan') {
+        stage('Trivy & TruffleHog & Gitleaks') {
             steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    script {
-                        sh '''
-                            echo "Running Trivy scan..."
-                            trivy fs . \
-                              --format json \
-                              --severity HIGH,CRITICAL \
-                              --exit-code 0 \
-                              --skip-files gitleaks-report.json \
-                              --skip-files trivy-report.json \
-                              --output trivy-report.json || true
-                        '''
+                sh '''
+                    set -e
 
-                        if (!fileExists('trivy-report.json')) {
-                            writeFile file: 'trivy-report.json', text: '{"Results":[]}\n'
-                        }
+                    echo "Running Trivy scan..."
+                    trivy fs . \
+                    --severity HIGH,CRITICAL \
+                    --exit-code 1 \
+                    --skip-files gitleaks-report.json \
+                    --output trivy-report.json \
+                    --skip-files trivy-report.json
 
-                        def raw = readFile('trivy-report.json').trim()
-                        if (!raw) {
-                            writeFile file: 'trivy-report.json', text: '{"Results":[]}\n'
-                            raw = '{"Results":[]}'
-                        }
+                    echo "Running TruffleHog scan..."
+                    trufflehog filesystem . --json --no-update > trufflehog-report.json
 
-                        def trivyReport = new JsonSlurperClassic().parseText(raw)
-                        int vulnCount = 0
-                        int secretCount = 0
-
-                        if (trivyReport?.Results instanceof List) {
-                            trivyReport.Results.each { result ->
-                                if (result?.Vulnerabilities instanceof List) {
-                                    vulnCount += result.Vulnerabilities.size()
-                                }
-                                if (result?.Secrets instanceof List) {
-                                    secretCount += result.Secrets.size()
-                                }
-                            }
-                        }
-
-                        if (vulnCount > 0 || secretCount > 0) {
-                            env.SCAN_FAILED = 'true'
-                            echo "Trivy findings: vulnerabilities=${vulnCount}, secrets=${secretCount}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('TruffleHog Scan') {
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    script {
-                        sh '''
-                            echo "Running TruffleHog scan..."
-                            trufflehog filesystem . --json --no-update > trufflehog-report.json || true
-                        '''
-
-                        if (!fileExists('trufflehog-report.json')) {
-                            writeFile file: 'trufflehog-report.json', text: ''
-                        }
-
-                        def raw = readFile('trufflehog-report.json').trim()
-                        if (raw) {
-                            env.SCAN_FAILED = 'true'
-                            echo 'TruffleHog findings detected.'
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Gitleaks Scan') {
-            steps {
-                catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
-                    script {
-                        sh '''
-                            echo "Running Gitleaks scan..."
-                            gitleaks detect \
-                              --source . \
-                              --log-opts="HEAD~1..HEAD" \
-                              --report-format json \
-                              --report-path gitleaks-report.json \
-                              --exit-code 0 || true
-                        '''
-
-                        if (!fileExists('gitleaks-report.json')) {
-                            writeFile file: 'gitleaks-report.json', text: '[]\n'
-                        }
-
-                        def raw = readFile('gitleaks-report.json').trim()
-                        if (!raw) {
-                            writeFile file: 'gitleaks-report.json', text: '[]\n'
-                            raw = '[]'
-                        }
-
-                        def gitleaksReport = new JsonSlurperClassic().parseText(raw)
-                        if (gitleaksReport instanceof List && gitleaksReport.size() > 0) {
-                            env.SCAN_FAILED = 'true'
-                            echo "Gitleaks findings: ${gitleaksReport.size()}"
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Security Gate') {
-            steps {
-                script {
-                    if (env.SCAN_FAILED == 'true') {
-                        error('Security findings detected. Build/push blocked. Check scan reports.')
-                    }
-                }
+                    echo "Running Gitleaks scan..."
+                    gitleaks detect \
+                    --source . \
+                    --log-opts="HEAD~1..HEAD" \
+                    --report-format json \
+                    --report-path gitleaks-report.json \
+                    --exit-code 1
+                '''
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    docker build -t ${env.IMAGE_NAME}:${env.IMAGE_TAG} .
                 """
             }
         }
@@ -188,9 +101,9 @@ pipeline {
                     passwordVariable: 'NEXUS_PASS'
                 )]) {
                     sh """
-                        echo "$NEXUS_PASS" | docker login ${REGISTRY} -u "$NEXUS_USER" --password-stdin
-                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                        docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+                        echo "$NEXUS_PASS" | docker login ${env.REGISTRY} -u "$NEXUS_USER" --password-stdin
+                        docker tag ${env.IMAGE_NAME}:${env.IMAGE_TAG} ${env.REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
+                        docker push ${env.REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG}
                     """
                 }
             }
@@ -199,71 +112,14 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline completed successfully'
-            echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-            script {
-                sendTelegramFileIfNonEmpty(
-                    'gitleaks-report.json',
-                    "SUCCESS - Gitleaks Report | Build #${BUILD_NUMBER}"
-                )
-                sendTelegramFileIfNonEmpty(
-                    'trivy-report.json',
-                    "SUCCESS - Trivy Report | Build #${BUILD_NUMBER}"
-                )
-                sendTelegramFileIfNonEmpty(
-                    'trufflehog-report.json',
-                    "SUCCESS - TruffleHog Report | Build #${BUILD_NUMBER}"
-                )
-            }
+            echo 'Pipeline completed successfully ✅'
+            echo "Image pushed: ${env.REGISTRY}/${env.IMAGE_NAME}:${env.IMAGE_TAG}"
         }
-
         failure {
-            script {
-                sendTelegramFileIfNonEmpty(
-                    'gitleaks-report.json',
-                    "FAILED - Gitleaks Report | Build #${BUILD_NUMBER}"
-                )
-                sendTelegramFileIfNonEmpty(
-                    'trivy-report.json',
-                    "FAILED - Trivy Report | Build #${BUILD_NUMBER}"
-                )
-                sendTelegramFileIfNonEmpty(
-                    'trufflehog-report.json',
-                    "FAILED - TruffleHog Report | Build #${BUILD_NUMBER}"
-                )
-            }
-            echo 'Pipeline failed'
+            echo "Pipeline failed ❌"
         }
-
         always {
             archiveArtifacts artifacts: '*.json', fingerprint: true
-        }
-    }
-}
-
-def sendTelegramFileIfNonEmpty(String filePath, String captionMessage) {
-    if (!fileExists(filePath)) {
-        echo "Skip Telegram upload: ${filePath} not found"
-        return
-    }
-
-    def isNonEmpty = sh(script: "test -s '${filePath}'", returnStatus: true) == 0
-    if (!isNonEmpty) {
-        echo "Skip Telegram upload: ${filePath} is empty"
-        return
-    }
-
-    withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN')]) {
-        withEnv([
-            "TG_FILE=${filePath}",
-            "TG_CAPTION=${captionMessage}"
-        ]) {
-            sh '''
-                curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/sendDocument" \
-                  -F chat_id=827881296 \
-                  -F document=@"$TG_FILE" \
-                  -F caption="$TG_CAPTION"
-            '''
         }
     }
 }
