@@ -1,15 +1,4 @@
-﻿def sendTelegramFile(filePath, captionMessage) {
-    withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN')]) {
-        sh """
-        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument \
-          -F chat_id=827881296 \
-          -F document=@${filePath} \
-          -F caption="${captionMessage}"
-        """
-    }
-}
-
-pipeline {
+﻿pipeline {
     agent any
 
     environment {
@@ -95,9 +84,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                """
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
             }
         }
 
@@ -121,38 +108,52 @@ pipeline {
     post {
 
         success {
-            echo 'Pipeline completed successfully ✅'
-            echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
-
             script {
-                sendTelegramFile("gitleaks-report.json",
-                    "✅ SUCCESS - Gitleaks Report\nBuild #${BUILD_NUMBER}")
+                def sendTelegramFile = { filePath, captionMessage ->
+                    withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN')]) {
+                        sh """
+                        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument \
+                          -F chat_id=827881296 \
+                          -F document=@${filePath} \
+                          -F caption="${captionMessage}"
+                        """
+                    }
+                }
 
-                sendTelegramFile("trivy-report.json",
-                    "✅ SUCCESS - Trivy Report\nBuild #${BUILD_NUMBER}")
+                echo 'Pipeline completed successfully ✅'
+                echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
-                sendTelegramFile("trufflehog-report.json",
-                    "✅ SUCCESS - TruffleHog Report\nBuild #${BUILD_NUMBER}")
+                sendTelegramFile("gitleaks-report.json", "✅ SUCCESS - Gitleaks Report\nBuild #${BUILD_NUMBER}")
+                sendTelegramFile("trivy-report.json", "✅ SUCCESS - Trivy Report\nBuild #${BUILD_NUMBER}")
+                sendTelegramFile("trufflehog-report.json", "✅ SUCCESS - TruffleHog Report\nBuild #${BUILD_NUMBER}")
             }
         }
 
         failure {
-            echo "Pipeline failed ❌"
-
             script {
+                def sendTelegramFile = { filePath, captionMessage ->
+                    withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN')]) {
+                        sh """
+                        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument \
+                          -F chat_id=827881296 \
+                          -F document=@${filePath} \
+                          -F caption="${captionMessage}"
+                        """
+                    }
+                }
+
+                echo "Pipeline failed ❌"
+
                 if (fileExists("gitleaks-report.json")) {
-                    sendTelegramFile("gitleaks-report.json",
-                        "❌ FAILED - Gitleaks Report\nBuild #${BUILD_NUMBER}")
+                    sendTelegramFile("gitleaks-report.json", "❌ FAILED - Gitleaks Report\nBuild #${BUILD_NUMBER}")
                 }
 
                 if (fileExists("trivy-report.json")) {
-                    sendTelegramFile("trivy-report.json",
-                        "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}")
+                    sendTelegramFile("trivy-report.json", "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}")
                 }
 
                 if (fileExists("trufflehog-report.json")) {
-                    sendTelegramFile("trufflehog-report.json",
-                        "❌ FAILED - TruffleHog Report\nBuild #${BUILD_NUMBER}")
+                    sendTelegramFile("trufflehog-report.json", "❌ FAILED - TruffleHog Report\nBuild #${BUILD_NUMBER}")
                 }
             }
         }
