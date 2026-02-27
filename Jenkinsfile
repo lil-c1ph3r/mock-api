@@ -105,7 +105,7 @@
 
     post {
         success {
-            echo 'Pipeline completed successfully ✅'
+            echo 'Pipeline completed successfully'
             echo "Image pushed: ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
             script {
                 sendTelegramFile(
