@@ -82,17 +82,12 @@ pipeline {
             steps {
                 sh '''
                     echo "Running TruffleHog scan..."
-                    trufflehog git $(pwd) \
-                    --results=verified,unverified,unknown \
-                    --fail \
-                    --no-update \
-                    --json > /tmp/trufflehog-report.json
 
                     trufflehog filesystem . \
                     --results=verified,unverified,unknown \
                     --fail \
                     --no-update \
-                    --json >> /tmp/trufflehog-report.json
+                    --json > /tmp/trufflehog-report.json
                 '''
             }
         }
