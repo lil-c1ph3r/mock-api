@@ -15,6 +15,9 @@ app.get('/hello', (req, res) => {
 app.listen(port, () => {
   console.log(`Mock API listening at http://localhost:${port}`);
 });
+
+const AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+const AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 //testing
 
 //testing 1
