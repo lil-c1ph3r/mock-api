@@ -8,7 +8,7 @@ pipeline {
         CLI_BIN_PATH = '/usr/local/bin'
         TRUFFLEHOG = "${CLI_BIN_PATH}/trufflehog"
         GITLEAKS = "${CLI_BIN_PATH}/gitleaks"
-
+e
         TRUFFLEHOG_REPORT = 'trufflehog-report.json'
         GITLEAKS_REPORT = 'gitleaks-report.json'
     }
