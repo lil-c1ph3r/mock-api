@@ -53,7 +53,7 @@ pipeline {
             }
         }
 
-        stage('Trivy & TruffleHog & Gitleaks') {
+        stage('Trivy Scan') {
             steps {
                 sh '''
                     echo "Running Trivy scan..."
@@ -63,10 +63,22 @@ pipeline {
                     --skip-files gitleaks-report.json \
                     --output trivy-report.json \
                     --skip-files trivy-report.json
+                '''
+            }
+        }
 
+        stage('TruffleHog Scan') {
+            steps {
+                sh '''
                     echo "Running TruffleHog scan..."
                     trufflehog filesystem . --json --no-update > trufflehog-report.json
+                '''
+            }
+        }
 
+        stage('Gitleaks Scan') {
+            steps {
+                sh '''
                     echo "Running Gitleaks scan..."
                     gitleaks detect \
                     --source . \
