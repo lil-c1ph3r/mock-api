@@ -3,13 +3,7 @@ pipeline {
 
     environment {
         REGISTRY = 'localhost:5000'
-        IMAGE_NAME = 'sample-api'
-
-        CLI_BIN_PATH = '/usr/local/bin'
-        TRUFFLEHOG = "${CLI_BIN_PATH}/trufflehog"
-        GITLEAKS = "${CLI_BIN_PATH}/gitleaks"
-        TRUFFLEHOG_REPORT = 'trufflehog-report.json'
-        GITLEAKS_REPORT = 'gitleaks-report.json'
+        IMAGE_NAME = 'mock-api'
     }
 
     stages {
@@ -68,10 +62,10 @@ pipeline {
                     --exit-code 1 \
                     --skip-files gitleaks-report.json \
                     --output trivy-report.json \
-                    --skip-files trufflehog-report.json
+                    --skip-files trivy-report.json
 
                     echo "Running TruffleHog scan..."
-                    ${TRUFFLEHOG} filesystem . --json --no-update > ${TRUFFLEHOG_REPORT}
+                    trufflehog filesystem . --json --no-update > trufflehog-report.json
 
                     echo "Running Gitleaks scan..."
                     gitleaks detect \
