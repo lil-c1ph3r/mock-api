@@ -85,7 +85,6 @@ pipeline {
                     trufflehog git . \
                     --results=verified,unverified,unknown \
                     --fail \
-                    --exclude-paths exclude.txt \
                     --json > /tmp/trufflehog-report.json
 
                     trufflehog filesystem . \
