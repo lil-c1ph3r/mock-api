@@ -8,6 +8,7 @@ pipeline {
     }
 
     stages {
+        failFast: false
         stage('Pull Code') {
             steps {
                 git url: 'https://github.com/lil-c1ph3r/mock-api.git',
