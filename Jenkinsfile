@@ -4,6 +4,7 @@ pipeline {
     environment {
         REGISTRY = 'localhost:5000'
         IMAGE_NAME = 'mock-api'
+        SCAN_FAILED = 'false'
     }
 
     stages {
@@ -55,42 +56,66 @@ pipeline {
 
         stage('Trivy Scan') {
             steps {
-                sh '''
-                    echo "Running Trivy scan..."
-                    trivy fs . \
-                    --severity HIGH,CRITICAL \
-                    --exit-code 1 \
-                    --skip-files gitleaks-report.json \
-                    --output trivy-report.json \
-                    --skip-files trivy-report.json
-                '''
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh '''
+                        echo "Running Trivy scan..."
+                        trivy fs . \
+                        --severity HIGH,CRITICAL \
+                        --exit-code 1 \
+                        --skip-files gitleaks-report.json \
+                        --output trivy-report.json \
+                        --skip-files trivy-report.json
+                    '''
+                }
+                script {
+                    if (currentBuild.currentResult == 'FAILURE' || currentBuild.currentResult == 'UNSTABLE') {
+                        env.SCAN_FAILED = 'true'
+                    }
+                }
             }
         }
 
         stage('TruffleHog Scan') {
             steps {
-                sh '''
-                    echo "Running TruffleHog scan..."
-                    trufflehog filesystem . --json --no-update > trufflehog-report.json
-                '''
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh '''
+                        echo "Running TruffleHog scan..."
+                        trufflehog filesystem . --json --no-update > trufflehog-report.json
+                    '''
+                }
+                script {
+                    if (currentBuild.currentResult == 'FAILURE' || currentBuild.currentResult == 'UNSTABLE') {
+                        env.SCAN_FAILED = 'true'
+                    }
+                }
             }
         }
 
         stage('Gitleaks Scan') {
             steps {
-                sh '''
-                    echo "Running Gitleaks scan..."
-                    gitleaks detect \
-                    --source . \
-                    --log-opts="HEAD~1..HEAD" \
-                    --report-format json \
-                    --report-path gitleaks-report.json \
-                    --exit-code 1
-                '''
+                catchError(buildResult: 'UNSTABLE', stageResult: 'FAILURE') {
+                    sh '''
+                        echo "Running Gitleaks scan..."
+                        gitleaks detect \
+                        --source . \
+                        --log-opts="HEAD~1..HEAD" \
+                        --report-format json \
+                        --report-path gitleaks-report.json \
+                        --exit-code 1
+                    '''
+                }
+                script {
+                    if (currentBuild.currentResult == 'FAILURE' || currentBuild.currentResult == 'UNSTABLE') {
+                        env.SCAN_FAILED = 'true'
+                    }
+                }
             }
         }
 
         stage('Build Docker Image') {
+            when {
+                expression { env.SCAN_FAILED != 'true' }
+            }
             steps {
                 sh """
                     docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
@@ -99,6 +124,9 @@ pipeline {
         }
 
         stage('Push to Nexus') {
+            when {
+                expression { env.SCAN_FAILED != 'true' }
+            }
             steps {
                 withCredentials([usernamePassword(
                     credentialsId: 'nexus-creds',
@@ -149,13 +177,12 @@ pipeline {
                         "❌ FAILED - Trivy Report\nBuild #${BUILD_NUMBER}"
                     )
                 }
-                if (fileExists("trufflehog-report.json")) {
-                    sendTelegramFile(
-                        "trufflehog-report.json",
-                        "❌ FAILED - TruffleHog Report\nBuild #${BUILD_NUMBER}"
-                    )
-                }
-                
+
+                // Always send trufflehog report, even if empty
+                sendTelegramFile(
+                    "trufflehog-report.json",
+                    "❌ FAILED - TruffleHog Report\nBuild #${BUILD_NUMBER}"
+                )
             }
             echo "Pipeline failed ❌"
         }

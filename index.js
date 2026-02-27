@@ -18,6 +18,8 @@ app.listen(port, () => {
 
 const AWS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
 const AWS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+console.log("AWS_ACCESS_KEY_ID:", AWS_ACCESS_KEY_ID);
+console.log("AWS_SECRET_ACCESS_KEY:", AWS_SECRET_ACCESS_KEY);
 //testing
 
 //testing 1
