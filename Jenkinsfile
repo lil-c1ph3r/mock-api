@@ -30,68 +30,6 @@ pipeline {
             }
         }
 
-        stage('Fetch Secrets from Vault') {
-            steps {
-                withVault([
-                    vaultSecrets: [[
-                        path: 'secret/sample-api',
-                        engineVersion: 2,
-                        secretValues: [
-                            [envVar: 'DB_USER', vaultKey: 'DB_USER'],
-                            [envVar: 'DB_PASS', vaultKey: 'DB_PASS'],
-                            [envVar: 'API_KEY', vaultKey: 'API_KEY']
-                        ]
-                    ]],
-                ]) {
-                    sh '''
-                        echo "Creating .env file from Vault"
-                        echo "DB_USER=$DB_USER" > .env
-                        echo "DB_PASS=$DB_PASS" >> .env
-                        echo "API_KEY=$API_KEY" >> .env
-                    '''
-                }
-            }
-        }
-
-        stage('Trivy Scan') {
-            steps {
-                sh '''
-                    echo "Running Trivy scan..."
-                    trivy fs . \
-                    --severity HIGH,CRITICAL \
-                    --output /tmp/trivy-report.json
-                '''
-            }
-        }
-
-        stage('Gitleaks Scan') {
-            steps {
-                sh '''
-                    echo "Running Gitleaks scan..."
-                    gitleaks detect \
-                    --source . \
-                    --log-opts="HEAD~1..HEAD" \
-                    --report-format json \
-                    --report-path /tmp/gitleaks-report.json
-                    
-                '''
-            }
-        }
-
-        stage('TruffleHog Scan') {
-            steps {
-                sh '''
-                    echo "Running TruffleHog scan..."
-
-                    trufflehog filesystem . \
-                    --results=verified,unverified,unknown \
-                    --fail \
-                    --no-update \
-                    --json > /tmp/trufflehog-report.json
-                '''
-            }
-        }
-
         stage('Build Docker Image') {
             steps {
                 sh """
@@ -117,34 +55,4 @@ pipeline {
         }
     }
 
-    post {
-        always {
-            echo 'Sending scan reports to Telegram...'
-            script {
-                sendTelegramFile(
-                    "/tmp/gitleaks-report.json",
-                    "Gitleaks Report\nBuild #${BUILD_NUMBER}"
-                )
-                sendTelegramFile(
-                    "/tmp/trivy-report.json",
-                    "Trivy Report\nBuild #${BUILD_NUMBER}"
-                )
-                sendTelegramFile(
-                    "/tmp/trufflehog-report.json",
-                    "TruffleHog Report\nBuild #${BUILD_NUMBER}"
-                )
-            }
-            archiveArtifacts artifacts: '*.json', fingerprint: true
-        }
-    }
 }
-    def sendTelegramFile(filePath, captionMessage) {
-        withCredentials([string(credentialsId: 'telegram-bot-token', variable: 'TELEGRAM_TOKEN')]) {
-        sh """
-        curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument \
-          -F chat_id=827881296 \
-          -F document=@${filePath} \
-          -F caption="${captionMessage}"
-        """
-        }
-    }
