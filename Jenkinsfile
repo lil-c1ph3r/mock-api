@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-    REGISTRY  = 'nexus.sokheng.space'
+    REGISTRY  = '127.0.0.1:8082'
     IMAGE_NAME = 'mock-api'
     }
 
