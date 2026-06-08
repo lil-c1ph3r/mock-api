@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = 'localhost:8081'
-        IMAGE_NAME = 'mock-api'
+    REGISTRY  = 'nexus.sokheng.space'
+    IMAGE_NAME = 'mock-api'
     }
 
     stages {
