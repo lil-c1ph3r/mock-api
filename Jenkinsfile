@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY = 'localhost:5000'
+        REGISTRY = 'localhost:8081'
         IMAGE_NAME = 'mock-api'
     }
 
