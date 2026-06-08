@@ -2,8 +2,8 @@ pipeline {
     agent any
 
     environment {
-    REGISTRY  = '127.0.0.1:8082'
-    IMAGE_NAME = 'mock-api'
+        REGISTRY   = 'host.docker.internal:8082'
+        IMAGE_NAME = 'mock-api'
     }
 
     stages {
@@ -19,12 +19,10 @@ pipeline {
             steps {
                 script {
                     VERSION = sh(
-                script: "grep '\"version\"' package.json | head -1 | cut -d '\"' -f4",
-                returnStdout: true
-            ).trim()
-
+                        script: "grep '\"version\"' package.json | head -1 | cut -d '\"' -f4",
+                        returnStdout: true
+                    ).trim()
                     IMAGE_TAG = "${VERSION}-${env.BUILD_NUMBER}"
-
                     echo "Building image version: ${IMAGE_TAG}"
                 }
             }
@@ -32,9 +30,7 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh """
-                    docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
-                """
+                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
             }
         }
 
@@ -45,14 +41,13 @@ pipeline {
                     usernameVariable: 'NEXUS_USER',
                     passwordVariable: 'NEXUS_PASS'
                 )]) {
-                    sh """
-                        echo "$NEXUS_PASS" | docker login ${REGISTRY} -u "$NEXUS_USER" --password-stdin
-                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                        docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                    """
+                    sh '''
+                        echo "$NEXUS_PASS" | docker login "$REGISTRY" -u "$NEXUS_USER" --password-stdin
+                        docker tag "$IMAGE_NAME:$IMAGE_TAG" "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+                        docker push "$REGISTRY/$IMAGE_NAME:$IMAGE_TAG"
+                    '''
                 }
             }
         }
     }
-
 }
