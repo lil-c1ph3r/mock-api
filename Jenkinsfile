@@ -4,6 +4,7 @@ pipeline {
     environment {
         REGISTRY   = 'host.docker.internal:8082'
         IMAGE_NAME = 'mock-api'
+        IMAGE_TAG  = ''
     }
 
     stages {
@@ -18,19 +19,19 @@ pipeline {
         stage('Set Image Version') {
             steps {
                 script {
-                    VERSION = sh(
+                    def VERSION = sh(
                         script: "grep '\"version\"' package.json | head -1 | cut -d '\"' -f4",
                         returnStdout: true
                     ).trim()
-                    IMAGE_TAG = "${VERSION}-${env.BUILD_NUMBER}"
-                    echo "Building image version: ${IMAGE_TAG}"
+                    env.IMAGE_TAG = "${VERSION}-${env.BUILD_NUMBER}"
+                    echo "Building image version: ${env.IMAGE_TAG}"
                 }
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+                sh 'docker build -t $IMAGE_NAME:$IMAGE_TAG .'
             }
         }
 
