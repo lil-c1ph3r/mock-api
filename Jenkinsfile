@@ -30,6 +30,40 @@ pipeline {
             }
         }
 
+        stage('Scan Secrets') {
+            steps {
+                sh '''
+                    docker run --rm \
+                        -v "$(pwd)":/path \
+                        zricethezav/gitleaks:latest \
+                        detect \
+                        --source /path \
+                        --no-git \
+                        --redact \
+                        --exit-code 1
+                '''
+            }
+        }
+
+        stage('Code Analysis') {
+            steps {
+                sh '''
+                    docker run --rm \
+                        -v "$(pwd)":/app \
+                        -w /app \
+                        node:22-alpine \
+                        sh -c "npm install --save-dev eslint @eslint/js 2>/dev/null && npx eslint . --ext .js --max-warnings 0 || true"
+                '''
+                sh '''
+                    docker run --rm \
+                        -v "$(pwd)":/app \
+                        -w /app \
+                        node:22-alpine \
+                        sh -c "npm audit --audit-level=high"
+                '''
+            }
+        }
+
         stage('Fetch Secrets from Vault') {
             steps {
                 withVault(
