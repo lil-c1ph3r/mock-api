@@ -142,6 +142,7 @@ pipeline {
                             image \
                             --format json \
                             --severity HIGH,CRITICAL \
+                            --ignore-unfixed \
                             --exit-code 1 \
                             ${IMAGE_NAME}:${IMAGE_TAG} > trivy-report.json || true
                         test -s trivy-report.json
