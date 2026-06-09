@@ -139,6 +139,7 @@ pipeline {
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
                             -v "${hostWorkspace}:/output" \
+                            -v /tmp/trivy-cache:/root/.cache/trivy \
                             aquasec/trivy:latest \
                             image \
                             --format json \
