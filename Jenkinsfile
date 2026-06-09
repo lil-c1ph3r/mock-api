@@ -33,6 +33,10 @@ pipeline {
         stage('Scan Secrets') {
             steps {
                 sh '''
+                    if ! command -v gitleaks > /dev/null 2>&1; then
+                        curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.27.2/gitleaks_8.27.2_linux_x64.tar.gz \
+                            | tar -xz -C /usr/local/bin gitleaks
+                    fi
                     gitleaks detect \
                         --source . \
                         --no-git \
