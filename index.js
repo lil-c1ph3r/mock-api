@@ -5,11 +5,11 @@ const port = 3000;
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({ message: 'Mock API is running!' });
+  res.json({ message: 'Mock API is running! From Version 2' });
 });
 
 app.get('/hello', (req, res) => {
-  res.json({ greeting: 'Hello from the mock API!' });
+  res.json({ greeting: 'Hello from the mock API! Version 2' });
 });
 
 app.listen(port, () => {
