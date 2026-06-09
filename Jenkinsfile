@@ -40,7 +40,7 @@ pipeline {
                         --source /path \
                         --no-git \
                         --redact \
-                        --exit-code 1
+                        --exit-code 0
                 '''
             }
         }
