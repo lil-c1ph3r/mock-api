@@ -23,7 +23,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/hello', (req, res) => {
-  res.json({ greeting: 'Hello from the mock API!' });
+  res.json({ greeting: 'Hello from the mock API! version 2' });
 });
 
 // Returns which env vars are loaded (values masked) — useful for verifying Vault injection
