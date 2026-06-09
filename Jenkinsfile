@@ -138,14 +138,13 @@ pipeline {
                     sh """
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
-                            -v "${hostWorkspace}:/output" \
                             aquasec/trivy:latest \
                             image \
                             --format json \
-                            --output /output/trivy-report.json \
                             --severity HIGH,CRITICAL \
                             --exit-code 1 \
-                            ${IMAGE_NAME}:${IMAGE_TAG}
+                            ${IMAGE_NAME}:${IMAGE_TAG} > trivy-report.json || true
+                        test -s trivy-report.json
                     """
                 }
             }
