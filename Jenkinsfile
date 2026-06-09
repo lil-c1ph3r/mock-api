@@ -53,26 +53,30 @@ pipeline {
         stage('Deploy to Server') {
             steps {
                 withCredentials([
-                    usernamePassword(
-                        credentialsId: 'nexus-creds',
-                        usernameVariable: 'NEXUS_USER',
-                        passwordVariable: 'NEXUS_PASS'
-                    ),
-                    sshUserPrivateKey(
-                        credentialsId: 'ec2-ssh-key',
-                        keyFileVariable: 'SSH_KEY'
-                    )
-                ]) {
-                    sh """
-                        ssh -i "\$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@ec2-122-248-196-223.ap-southeast-1.compute.amazonaws.com '
-                            echo "${NEXUS_PASS}" | docker login ${REGISTRY} -u "${NEXUS_USER}" --password-stdin
-                            docker pull ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                            docker stop ${IMAGE_NAME} || true
-                            docker rm ${IMAGE_NAME} || true
-                            docker run -d --name ${IMAGE_NAME} --restart unless-stopped -p 3000:3000 ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                        '
-                    """
-                }
+            usernamePassword(
+                credentialsId: 'nexus-creds',
+                usernameVariable: 'NEXUS_USER',
+                passwordVariable: 'NEXUS_PASS'
+            ),
+            sshUserPrivateKey(
+                credentialsId: 'ec2-ssh-key',
+                keyFileVariable: 'SSH_KEY'
+            )
+        ]) {
+                    sh '''
+                ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no ubuntu@ec2-122-248-196-223.ap-southeast-1.compute.amazonaws.com '
+                    echo "$NEXUS_PASS" | docker login $REGISTRY -u "$NEXUS_USER" --password-stdin
+                    docker pull $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                    docker stop $IMAGE_NAME || true
+                    docker rm $IMAGE_NAME || true
+                    docker run -d \
+                        --name $IMAGE_NAME \
+                        --restart unless-stopped \
+                        -p 127.0.0.1:3000:3000 \
+                        $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                '
+            '''
+        }
             }
         }
     }
