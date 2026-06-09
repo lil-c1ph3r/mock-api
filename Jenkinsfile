@@ -144,8 +144,8 @@ pipeline {
                             --severity HIGH,CRITICAL \
                             --ignore-unfixed \
                             --exit-code 1 \
-                            ${IMAGE_NAME}:${IMAGE_TAG} > trivy-report.json; TRIVY_EXIT=\$?
-                        test -s trivy-report.json
+                            ${IMAGE_NAME}:${IMAGE_TAG} > ${WORKSPACE}/trivy-report.json; TRIVY_EXIT=\$?
+                        test -s ${WORKSPACE}/trivy-report.json
                         exit \$TRIVY_EXIT
                     """
                 }
