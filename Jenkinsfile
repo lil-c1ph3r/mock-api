@@ -37,8 +37,15 @@ pipeline {
                         --source . \
                         --no-git \
                         --redact \
+                        --report-format json \
+                        --report-path gitleaks-report.json \
                         --exit-code 1
                 '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'gitleaks-report.json', allowEmptyArchive: true
+                }
             }
         }
 
