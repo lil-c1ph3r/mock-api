@@ -39,8 +39,4 @@ app.listen(port, () => {
 });
 
 
-// TEST ONLY - simulating leaked secrets for Gitleaks scan validation
-const AWS_ACCESS_KEY_ID = "AKIA4HPGXBTQ2NLK8VZD";
-const AWS_SECRET_ACCESS_KEY = "cPxRfiK7MDENwJalrXUtn8FEM3bI/K7MDENG9xKm";
-const GITHUB_TOKEN = "ghp_zK9mXv2Lq4Rn7Yw3Tp6Uc1Bd8Hj5Nf0Sg2Ae";
-const STRIPE_KEY = "sk_live_4eC39HqLyjWDarjtT1zdp7dc";
+
