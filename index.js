@@ -8,9 +8,9 @@ app.use(express.json());
 const config = {
   awsAccessKey:  process.env.AWS_ACCESS_KEY_ID,
   awsSecretKey:  process.env.AWS_SECRET_ACCESS_KEY,
-  awsRegion:     process.env.AWS_REGION        || 'ap-southeast-1',
+  awsRegion:     process.env.AWS_REGION,
   dbHost:        process.env.DB_HOST,
-  dbPort:        process.env.DB_PORT           || 5432,
+  dbPort:        process.env.DB_PORT,
   dbName:        process.env.DB_NAME,
   dbUser:        process.env.DB_USER,
   dbPassword:    process.env.DB_PASSWORD,
