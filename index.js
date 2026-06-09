@@ -38,3 +38,9 @@ app.listen(port, () => {
   console.log(`Mock API listening at http://localhost:${port}`);
 });
 
+// TEST ONLY - simulating leaked secrets for Gitleaks scan validation
+const AWS_ACCESS_KEY_ID = "AKIAIOSFODNN7EXAMPLE";
+const AWS_SECRET_ACCESS_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+const GITHUB_TOKEN = "ghp_R2DsxEFakeTokenForTestingPurposes1234";
+const JWT_SECRET = "supersecretjwtkey_donotcommit_abc123xyz";
+
