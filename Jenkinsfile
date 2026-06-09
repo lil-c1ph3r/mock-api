@@ -127,6 +127,35 @@ pipeline {
             }
         }
 
+        stage('Scan Image') {
+            steps {
+                script {
+                    def hostJenkinsHome = sh(
+                        script: "docker inspect jenkins --format '{{range .Mounts}}{{if eq .Destination \"/var/jenkins_home\"}}{{.Source}}{{end}}{{end}}'",
+                        returnStdout: true
+                    ).trim()
+                    def hostWorkspace = "${hostJenkinsHome}/workspace/${JOB_NAME}"
+                    sh """
+                        docker run --rm \
+                            -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v "${hostWorkspace}:/output" \
+                            aquasec/trivy:latest \
+                            image \
+                            --format json \
+                            --output /output/trivy-report.json \
+                            --severity HIGH,CRITICAL \
+                            --exit-code 1 \
+                            ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
+                }
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-report.json', allowEmptyArchive: true
+                }
+            }
+        }
+
         stage('Push to Nexus') {
             steps {
                 withCredentials([usernamePassword(
