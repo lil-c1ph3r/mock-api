@@ -5,7 +5,7 @@ pipeline {
         REGISTRY    = 'nexus:8082'
         IMAGE_NAME  = 'mock-api'
         VAULT_ADDR  = 'http://vault:8200'
-        VAULT_PATH  = '/v1/mock-api/data/dev'
+        VAULT_PATH  = 'mock-api/dev'
     }
 
     stages {
