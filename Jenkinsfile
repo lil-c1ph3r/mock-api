@@ -4,7 +4,7 @@ pipeline {
     environment {
         REGISTRY    = '127.0.0.1:8082'
         IMAGE_NAME  = 'mock-api'
-        VAULT_ADDR  = 'http://127.0.0.1:8200'
+        VAULT_ADDR  = 'http://vault:8200'
         VAULT_PATH  = 'mock-api/dev'
     }
 
