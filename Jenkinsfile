@@ -2,9 +2,9 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY    = '127.0.0.1:8082'
+        REGISTRY    = 'nexus:8082'
         IMAGE_NAME  = 'mock-api'
-        VAULT_ADDR  = 'http://127.0.0.1:8200'
+        VAULT_ADDR  = 'http://vault:8200'
         VAULT_PATH  = '/v1/mock-api/data/dev'
     }
 
