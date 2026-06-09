@@ -32,16 +32,13 @@ pipeline {
 
         stage('Scan Secrets') {
             steps {
-                sh """
-                    docker run --rm \
-                        -v "${WORKSPACE}":/path \
-                        zricethezav/gitleaks:latest \
-                        detect \
-                        --source /path \
+                sh '''
+                    gitleaks detect \
+                        --source . \
                         --no-git \
                         --redact \
                         --exit-code 1
-                """
+                '''
             }
         }
 
