@@ -138,15 +138,15 @@ pipeline {
                     sh """
                         docker run --rm \
                             -v /var/run/docker.sock:/var/run/docker.sock \
+                            -v "${hostWorkspace}:/output" \
                             aquasec/trivy:latest \
                             image \
                             --format json \
+                            --output /output/trivy-report.json \
                             --severity HIGH,CRITICAL \
                             --ignore-unfixed \
                             --exit-code 1 \
-                            ${IMAGE_NAME}:${IMAGE_TAG} > ${WORKSPACE}/trivy-report.json; TRIVY_EXIT=\$?
-                        test -s ${WORKSPACE}/trivy-report.json
-                        exit \$TRIVY_EXIT
+                            ${IMAGE_NAME}:${IMAGE_TAG}
                     """
                 }
             }
